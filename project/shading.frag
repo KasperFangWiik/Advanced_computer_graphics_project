@@ -59,11 +59,30 @@ layout(location = 0) out vec4 fragmentColor;
 
 vec3 calculateDirectIllumiunation(vec3 wo, vec3 n)
 {
-	return vec3(material_color);
+
+	vec3 wi = (viewSpaceLightPosition - viewSpacePosition); // vecto from frag poss to light poss
+	float d_squared = dot(wi,wi);
+	vec3 Li = point_light_intensity_multiplier * point_light_color * 1.0/ (d_squared);
+
+	vec3 normwi = normalize(wi);
+	float ndotwi = max(0.0001,dot(n,normwi));
+	vec3 deffuse_light = material_color * (1.0/PI) * abs(ndotwi) * Li;
+	//vec3 deffuse_light = material_color * ndotwi * (point_light_intensity_multiplier * point_light_color)/(PI * d_squared);
+	
+	/*
+	// specular light calculations
+	vec3 h = (wo + normwi);
+	float ndoth = max(0.0001,dot(n,h));
+	float specular_light = pow(ndoth, material_shininess);
+	float f = material_fresnel;
+	*/ // semi correct, need more complexity 
+
+	return deffuse_light;//vec3(material_color);
 }
 
 vec3 calculateIndirectIllumination(vec3 wo, vec3 n)
 {
+
 	return vec3(0.0);
 }
 
