@@ -66,7 +66,7 @@ float point_light_intensity_multiplier = 10000.0f;
 ///////////////////////////////////////////////////////////////////////////////
 vec3 cameraPosition(-70.0f, 50.0f, 70.0f);
 vec3 cameraDirection = normalize(vec3(0.0f) - cameraPosition);
-float cameraSpeed = 10.f;
+float cameraSpeed = 50.f;//10.f;
 
 vec3 worldUp(0.0f, 1.0f, 0.0f);
 
@@ -76,6 +76,9 @@ vec3 worldUp(0.0f, 1.0f, 0.0f);
 labhelper::Model* fighterModel = nullptr;
 labhelper::Model* landingpadModel = nullptr;
 labhelper::Model* sphereModel = nullptr;
+
+labhelper::Model* testsceneModel = nullptr;
+mat4 testsceneModelMatrix;
 
 mat4 roomModelMatrix;
 mat4 landingPadModelMatrix;
@@ -122,6 +125,10 @@ void initialize()
 	landingpadModel = labhelper::loadModelFromOBJ("../scenes/landingpad.obj");
 	sphereModel = labhelper::loadModelFromOBJ("../scenes/sphere.obj");
 
+	testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
+
+	testsceneModelMatrix = mat4(1.0f);
+	
 	roomModelMatrix = mat4(1.0f);
 	fighterModelMatrix = translate(15.0f * worldUp);
 	landingPadModelMatrix = mat4(1.0f);
@@ -184,6 +191,7 @@ void drawScene(GLuint currentShaderProgram,
 	// camera
 	labhelper::setUniformSlow(currentShaderProgram, "viewInverse", inverse(viewMatrix));
 
+	/*
 	// landing pad
 	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
 	                          projectionMatrix * viewMatrix * landingPadModelMatrix);
@@ -192,6 +200,17 @@ void drawScene(GLuint currentShaderProgram,
 	                          inverse(transpose(viewMatrix * landingPadModelMatrix)));
 
 	labhelper::render(landingpadModel);
+	*/
+
+	// test scene
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
+	                          projectionMatrix * viewMatrix * testsceneModelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", viewMatrix * testsceneModelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
+	                          inverse(transpose(viewMatrix * testsceneModelMatrix)));
+
+	labhelper::render(testsceneModel);
+
 
 	// Fighter
 	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
@@ -411,6 +430,8 @@ int main(int argc, char* argv[])
 	labhelper::freeModel(fighterModel);
 	labhelper::freeModel(landingpadModel);
 	labhelper::freeModel(sphereModel);
+
+	labhelper::freeModel(testsceneModel);
 
 	// Shut down everything. This includes the window and all other subsystems.
 	labhelper::shutDown(g_window);
