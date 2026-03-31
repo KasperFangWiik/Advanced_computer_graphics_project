@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
+//#define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
+#include <tiny_obj_loader.h>
 
 namespace labhelper
 {
@@ -75,6 +77,11 @@ public:
 };
 
 Model* loadModelFromOBJ(std::string filename);
+void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vector<tinyobj::shape_t>& shapes);
+void Get_2dEdgeVertices_of_convexShapeModel(Model& model2dConvexShape);
+Model* loadModelFromOBJ(std::string path, bool test);
+// need to find all unique v/vn/vt "vertices" for each index because glDrawElements share one index between attributes in opengl...
+Model* Use_lookup_loadModelFromOBJ(std::string path);
 void saveModelToOBJ(Model* model, std::string filename);
 void freeModel(Model* model);
 void render(const Model* model, const bool submitMaterials = true);
