@@ -125,7 +125,8 @@ void initialize()
 	landingpadModel = labhelper::loadModelFromOBJ("../scenes/landingpad.obj");
 	sphereModel = labhelper::loadModelFromOBJ("../scenes/sphere.obj");
 
-	testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj", true);
+	//testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
+	testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
 
 	//Get_2dEdgeVertices_of_convexShapeModel(*testsceneModel);
 	testsceneModelMatrix = mat4(1.0f);
