@@ -78,9 +78,7 @@ public:
 
 Model* loadModelFromOBJ(std::string filename);
 void saveColiderToFile(std::vector<glm::vec3>& colliderVertices, std::string path);
-void Get_2dEdgeVertices_of_convexShapeModel(Model& model2dConvexShape);
 void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vector<tinyobj::shape_t>& shapes, std::string path, std::string name);
-// need to find all unique v/vn/vt "vertices" for each index because glDrawElements share one index between attributes in opengl...
 Model* loadModelFromOBJ_n_addColiderFile(std::string path);
 void saveModelToOBJ(Model* model, std::string filename);
 void freeModel(Model* model);

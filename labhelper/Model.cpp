@@ -406,7 +406,7 @@ void printEdges(std::vector<std::pair<uint32_t, uint32_t>>& edges, tinyobj::attr
 		}
 		printf(" __________________ \n");
 }
-// this one is probably more troble than first one....
+
 void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vector<tinyobj::shape_t>& shapes, std::string path){
 
 	std::vector<glm::vec3> allVerticePos(attrib.vertices.begin(),attrib.vertices.end());
