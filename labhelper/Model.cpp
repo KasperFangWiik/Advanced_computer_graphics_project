@@ -413,26 +413,21 @@ void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vec
 
 	for(const tinyobj::shape_t& shape: shapes){
 
-		std::vector<std::pair<uint32_t, uint32_t>> local_edges;// will need to resize to "slim fit" the data, i hope that .size does not 
+		std::vector<std::pair<uint32_t, uint32_t>> local_edges;
 		local_edges.reserve(shape.mesh.indices.size());
 
 		for(int f = 0; f < int(shape.mesh.indices.size()) / 3; f++){
 
-			// why do i need to multiply the indices with three here????????
-			// kanske för att de andra attributen ligger i mellan.....?
 			uint32_t v1_idx  = shape.mesh.indices[f*3].vertex_index*3;
 			uint32_t v2_idx  = shape.mesh.indices[(f*3)+1].vertex_index*3;
 			uint32_t v3_idx  = shape.mesh.indices[(f*3)+2].vertex_index*3;
 
-			//printf("\n indices: %i , %i , %i",v1_idx,v2_idx,v3_idx );
+
 			glm::vec3 v1  = glm::vec3(attrib.vertices[v1_idx],attrib.vertices[v1_idx+1],attrib.vertices[v1_idx+2]);
 			glm::vec3 v2  = glm::vec3(attrib.vertices[v2_idx],attrib.vertices[v2_idx+1],attrib.vertices[v2_idx+2]);
 			glm::vec3 v3  = glm::vec3(attrib.vertices[v3_idx],attrib.vertices[v3_idx+1],attrib.vertices[v3_idx+2]);
 
-			//glm::vec3 testnoll= glm::vec3(attrib.vertices[0],attrib.vertices[1],attrib.vertices[2]);
-		//printf("\n v1: { %f, %f , %f }",v1.x,v1.y,v1.z);
-		//printf("\n v2: { %f, %f , %f }",v2.x,v2.y,v2.z);
-		//printf("\n v3: { %f, %f , %f }",v3.x,v3.y,v3.z);
+
 			if (v1.y != 0 || v2.y != 0 ||v3.y != 0 )
 				continue;
 
@@ -752,6 +747,12 @@ Model* loadModelFromOBJ_n_addColiderFile(std::string path)
 	std::cout << "done.\n";
 	return model;
 }
+
+std::vector<glm::vec3> loadColliders(std::string path){
+	
+
+}
+
 
 void saveModelToOBJ(Model* model, std::string path)
 {
