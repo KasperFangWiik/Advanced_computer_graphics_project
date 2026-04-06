@@ -80,6 +80,7 @@ Model* loadModelFromOBJ(std::string filename);
 void saveColiderToFile(std::vector<glm::vec3>& colliderVertices, std::string path);
 void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vector<tinyobj::shape_t>& shapes, std::string path, std::string name);
 Model* loadModelFromOBJ_n_addColiderFile(std::string path);
+std::vector<glm::vec3> loadColliders(std::string path);
 void saveModelToOBJ(Model* model, std::string filename);
 void freeModel(Model* model);
 void render(const Model* model, const bool submitMaterials = true);

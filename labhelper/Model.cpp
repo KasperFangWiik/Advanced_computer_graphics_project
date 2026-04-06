@@ -368,7 +368,7 @@ void saveColiderToFile(std::vector<glm::vec3>& colliderVertices, std::string pat
 	separator = filename.find_last_of(".");
 	if(separator == std::string::npos)
 	{
-		std::cout << "Fatal: loadModelFromOBJ(): Expecting filename ending in '.dat'\n";
+		std::cout << "Fatal: saveColiderToFile(): Expecting filename ending in '.dat'\n";
 		exit(1);
 	}
 	extension = filename.substr(separator, filename.size() - separator);
@@ -387,7 +387,6 @@ void saveColiderToFile(std::vector<glm::vec3>& colliderVertices, std::string pat
 	{
 		mat_file << std::to_string(v.x) <<" "<< std::to_string(v.y)<<" "<< std::to_string(v.z)<<"\n";
 	}
-	mat_file << "EOF";
 	mat_file.close();
 	
 }
@@ -422,36 +421,28 @@ void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vec
 			uint32_t v2_idx  = shape.mesh.indices[(f*3)+1].vertex_index*3;
 			uint32_t v3_idx  = shape.mesh.indices[(f*3)+2].vertex_index*3;
 
-
 			glm::vec3 v1  = glm::vec3(attrib.vertices[v1_idx],attrib.vertices[v1_idx+1],attrib.vertices[v1_idx+2]);
 			glm::vec3 v2  = glm::vec3(attrib.vertices[v2_idx],attrib.vertices[v2_idx+1],attrib.vertices[v2_idx+2]);
 			glm::vec3 v3  = glm::vec3(attrib.vertices[v3_idx],attrib.vertices[v3_idx+1],attrib.vertices[v3_idx+2]);
 
-
-			if (v1.y != 0 || v2.y != 0 ||v3.y != 0 )
-				continue;
+			if (v1.y != 0 || v2.y != 0 || v3.y != 0 ) continue;
 
 			local_edges.emplace_back(v1_idx,v2_idx);
 			local_edges.emplace_back(v2_idx,v3_idx);
 			local_edges.emplace_back(v3_idx,v1_idx);
 		}
-		printf("\n Before outline stuff mesh name:%s \n", shape.name.c_str());
+		//printf("\n Before outline stuff mesh name:%s \n", shape.name.c_str());
 		//printEdges(local_edges,attrib,0);
-		// should i store all vertex indices so that they are in one vector or should i 
 
-		uint32_t outline_index = 0;
 		// now I need to find all edges that are shared between vertices:
+		uint32_t outline_index = 0;
 		for(uint32_t i = outline_index; i < local_edges.size(); i++){
-
 			std::pair<uint32_t, uint32_t>& a = local_edges[i];
 			
 			//for each triangle check if edges are(xi,yi) == (xt,yt) or (xi,yi) == (yt, xt)
-			// for now we are just wapping all 
-
+			// if true move the edge to the back and ceap count of where the exceptible edges are indexed from, the index is called outline_index
 			uint32_t swap_counter = 0;
 			for(uint32_t j = i+1; j < local_edges.size(); j++){
-				//if(lambda(local_edges[j])){
-
 				std::pair<uint32_t, uint32_t>& b = local_edges[j];
 				if( (a.first == b.first && a.second == b.second) || 
 					(a.first == b.second && a.second == b.first)) {
@@ -463,6 +454,7 @@ void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vec
 				outline_index = swap_counter;
 			}
 		}
+
 		printf(" \n After outline stuff mesh name: %s \n", shape.name.c_str());
 		printEdges(local_edges,attrib,outline_index);
 
@@ -750,7 +742,81 @@ Model* loadModelFromOBJ_n_addColiderFile(std::string path)
 
 std::vector<glm::vec3> loadColliders(std::string path){
 	
+	std::vector<glm::vec3> collider_vertices;
+	collider_vertices.reserve(3); // I assume that the smallest number of vertices to a convex poligon is 3 aka a triangle (will have special case sphere...)
 
+	// this is reused code from loading or saving .obj files 
+	size_t separator = path.find_last_of("\\/");
+	std::string filename, extension, directory;
+	if(separator != std::string::npos)
+	{
+		filename = path.substr(separator + 1, path.size() - separator - 1);
+		directory = path.substr(0, separator + 1);
+	}
+	else
+	{
+		filename = path;
+		directory = "./";
+	}
+	separator = filename.find_last_of(".");
+	if(separator == std::string::npos)
+	{
+		std::cout << "Fatal: loadColliders(): Expecting filename ending in '.dat'\n";
+		exit(1);
+	}
+	extension = filename.substr(separator, filename.size() - separator);
+	filename = filename.substr(0, separator);
+
+	///////////////////////////////////////////////////////////////////////
+	// Save Materials
+	///////////////////////////////////////////////////////////////////////
+
+	std::ifstream is;
+  	std::filebuf * colider_fb = is.rdbuf();
+
+	colider_fb->open(directory + filename + ".dat",std::ios::in);
+	
+	if(!colider_fb->is_open()){
+		printf("Could not open file: %s",(directory + filename + ".dat").c_str());
+	} 
+	else 
+	{
+		// https://cplusplus.com/reference/fstream/filebuf/
+		char c = 0;
+		std::string char_buffer;
+		float val_buff[3]={};
+		int i = 0;
+
+		// if the file buffer colider_fb is nulptr stop
+		while((c = colider_fb->sbumpc()) != std::filebuf::traits_type::eof()){
+		
+			switch(c) {
+
+				case ' ':
+					//if(i > 2) char_buffer.clear();
+					//char_buffer += static_cast<char>(c);
+					val_buff[i++] = std::stof(char_buffer);
+					char_buffer.clear();
+				break;
+
+				case '\n':
+					val_buff[i++] = std::stof(char_buffer);
+					i = 0;
+					char_buffer.clear();
+					collider_vertices.emplace_back(glm::vec3(val_buff[0],val_buff[1],val_buff[2]));
+				break;
+
+				default:
+					char_buffer += static_cast<char>(c);
+
+			}
+		
+		}
+	}
+
+	colider_fb->close();
+
+	return collider_vertices;
 }
 
 

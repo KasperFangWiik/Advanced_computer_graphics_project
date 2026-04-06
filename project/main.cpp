@@ -125,8 +125,15 @@ void initialize()
 	landingpadModel = labhelper::loadModelFromOBJ("../scenes/landingpad.obj");
 	sphereModel = labhelper::loadModelFromOBJ("../scenes/sphere.obj");
 
-	testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
-	//testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
+	//testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
+	testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
+	std::vector<glm::vec3> collider{};
+
+	collider = labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat");
+	for(const glm::vec3& v: collider){
+		printf("{ %f, %f , %f } ", v.x, v.y, v.z);
+	}
+	printf("\n");
 
 	//Get_2dEdgeVertices_of_convexShapeModel(*testsceneModel);
 	testsceneModelMatrix = mat4(1.0f);
