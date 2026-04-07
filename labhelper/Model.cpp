@@ -425,7 +425,8 @@ void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vec
 			glm::vec3 v2  = glm::vec3(attrib.vertices[v2_idx],attrib.vertices[v2_idx+1],attrib.vertices[v2_idx+2]);
 			glm::vec3 v3  = glm::vec3(attrib.vertices[v3_idx],attrib.vertices[v3_idx+1],attrib.vertices[v3_idx+2]);
 
-			if (v1.y != 0 || v2.y != 0 || v3.y != 0 ) continue;
+			//if (v1.y != 0 || v2.y != 0 || v3.y != 0 ) continue;
+			if (v1.y > 0 || v2.y > 0 || v3.y > 0 ) continue;
 
 			local_edges.emplace_back(v1_idx,v2_idx);
 			local_edges.emplace_back(v2_idx,v3_idx);

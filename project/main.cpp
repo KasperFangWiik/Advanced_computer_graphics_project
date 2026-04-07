@@ -78,6 +78,9 @@ labhelper::Model* landingpadModel = nullptr;
 labhelper::Model* sphereModel = nullptr;
 
 labhelper::Model* testsceneModel = nullptr;
+labhelper::Model* entityCubeModel = nullptr;
+
+mat4 entityCubeModelMatrix;
 mat4 testsceneModelMatrix;
 
 mat4 roomModelMatrix;
@@ -125,8 +128,15 @@ void initialize()
 	landingpadModel = labhelper::loadModelFromOBJ("../scenes/landingpad.obj");
 	sphereModel = labhelper::loadModelFromOBJ("../scenes/sphere.obj");
 
-	//testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
-	testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
+	testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
+	//testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
+
+	//entityCubeModel = labhelper::loadModelFromOBJ("../scenes/test_ent.obj");;
+	entityCubeModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_ent.obj");;
+
+	std::vector<glm::vec3> entityCollider{};
+	entityCollider = labhelper::loadColliders("../scenes/test_ent_Cube.dat");
+
 	std::vector<glm::vec3> collider{};
 
 	collider = labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat");
@@ -134,9 +144,30 @@ void initialize()
 		printf("{ %f, %f , %f } ", v.x, v.y, v.z);
 	}
 	printf("\n");
+	// how and could i handle a multi file path like: "../scenes/test_scene1_*_Wall_*.dat"
+	/*
+	//find all file names in directory and find the ones containing these?
+	if (filename.find("test_scene1_") != std::string::npos &&
+    filename.find("_Wall_") != std::string::npos &&
+    filename.ends_with(".dat"))
+	*/
 
 	//Get_2dEdgeVertices_of_convexShapeModel(*testsceneModel);
+
 	testsceneModelMatrix = mat4(1.0f);
+		// borde göra något mer regoröst..
+	entityCubeModelMatrix = glm::translate(glm::vec3(0.0f,1.0f, 0.0f)) * mat4(1.0f);
+
+	printf("entityCollider:");
+	for(glm::vec3& v: entityCollider){
+		v += glm::vec3(0.0f,1.0f, 0.0f); // motsvarar translation
+		printf("{ %f, %f , %f } ", v.x, v.y, v.z);
+	}
+	printf("\n");
+	//entityCollider = glm::translate(glm::vec3(0.0f,1.5f, 0.0f)) * entityCollider; 
+
+
+	// entityCubeModelMatrix = glm::translate(glm::vec3(0.0f,0.5f, 0.0f)) * entityCubeModelMatrix;
 	
 	roomModelMatrix = mat4(1.0f);
 	fighterModelMatrix = translate(15.0f * worldUp);
@@ -219,7 +250,17 @@ void drawScene(GLuint currentShaderProgram,
 	                          inverse(transpose(viewMatrix * testsceneModelMatrix)));
 
 	labhelper::render(testsceneModel);
+	
+	//render entity cube
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
+	                          projectionMatrix * viewMatrix * entityCubeModelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", viewMatrix * entityCubeModelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
+	                          inverse(transpose(viewMatrix * entityCubeModelMatrix)));
 
+	labhelper::render(entityCubeModel);
+	
+	
 
 	// Fighter
 	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
@@ -379,6 +420,47 @@ bool handleEvents(void)
 	{
 		cameraPosition += cameraSpeed * deltaTime * worldUp;
 	}
+
+	// entity movement: move along the test_scene plane, for now x and z axis
+	if(state[SDL_SCANCODE_UP] || state[SDL_SCANCODE_DOWN] ||
+	   state[SDL_SCANCODE_LEFT] || state[SDL_SCANCODE_RIGHT]){
+		/*
+		bool up = state[SDL_SCANCODE_UP];
+		bool down = state[SDL_SCANCODE_DOWN];
+
+		bool left = state[SDL_SCANCODE_LEFT];
+		bool right = state[SDL_SCANCODE_RIGHT];
+		*/
+
+		bool up = state[SDL_SCANCODE_RIGHT] ;
+		bool down = state[SDL_SCANCODE_LEFT];
+
+		bool left = state[SDL_SCANCODE_DOWN];
+		bool right = state[SDL_SCANCODE_UP];
+
+		 // != works like xor
+		bool moveParallel = (up != down);
+		bool moveVertical = (left != right);
+		glm::vec3 mv = glm::vec3((float)moveVertical, 0.0f, -(float)moveParallel);
+
+		// moving diagonaly
+		const float ONE_DIV_SQRTWO = 0.70706781f;
+		if ((up && right) || (up && left) || 
+		  (down && right) || (down && left))
+		{
+			mv.x = ONE_DIV_SQRTWO; 
+			mv.z = -ONE_DIV_SQRTWO;
+		}
+
+		if(up){ mv.z = -mv.z; }
+		if(left){ mv.x = -mv.x; }
+		
+		float entitySpeed = 25.0f;
+		entityCubeModelMatrix = glm::translate( mv * entitySpeed * deltaTime) * entityCubeModelMatrix;
+
+	   }
+
+
 	return quitEvent;
 }
 
