@@ -140,30 +140,18 @@ const std::array<float, 2> min_max_projection_distance(
 
 bool collision(ConvexCollider& poly1, ConvexCollider& poly2, glm::vec3& respons_vector) {
 
-    // the move might be invalidating the elements in std::vector...
-    //std::vector<glm::vec3> vertecis_poly1(std::move(poly1.vertices));
-    std::vector<glm::vec3>  normals_1(normals_of_ConvexShape(poly1.vertices));
+    std::vector<glm::vec3>  normals(std::move(normals_of_ConvexShape(poly1.vertices)));
+    std::vector<glm::vec3>  n2(std::move(normals_of_ConvexShape(poly2.vertices)));
 
-    //std::vector<glm::vec3> vertecis_poly2(std::move(poly2.vertices));
-    std::vector<glm::vec3>  normals_2(normals_of_ConvexShape(poly2.vertices));
+    normals.reserve(normals.size() + n2.size());
+    normals.insert(normals.end(), n2.begin(), n2.end());
 
     CollisionResponseData respons_data = { std::numeric_limits<float>::max(), {} };
+    for (const glm::vec3& n : normals) {
+        const std::array<float, 2> min_max_dist1 = min_max_projection_distance(n, poly1.vertices);
+        const std::array<float, 2> min_max_dist2 = min_max_projection_distance(n, poly2.vertices);
 
-    for (const glm::vec3& n1 : normals_1) {
-        const std::array<float, 2> min_max_dist1 = min_max_projection_distance(n1, poly1.vertices);
-        const std::array<float, 2> min_max_dist2 = min_max_projection_distance(n1, poly2.vertices);
-        
-        if (!check_SAT_axis_overlap(n1, min_max_dist1, min_max_dist2, respons_data))
-            return false;
-        }
-
-
-    for (const glm::vec3& n2 : normals_2) {
-
-        const std::array<float, 2> min_max_dist1 = min_max_projection_distance(n2, poly1.vertices);
-        const std::array<float, 2> min_max_dist2 = min_max_projection_distance(n2, poly2.vertices);
-
-        if (!check_SAT_axis_overlap(n2, min_max_dist1, min_max_dist2, respons_data))
+        if (!check_SAT_axis_overlap(n, min_max_dist1, min_max_dist2, respons_data))
             return false;
     }
 

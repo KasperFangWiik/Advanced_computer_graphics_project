@@ -140,7 +140,7 @@ void initialize()
 	//testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
 	testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
 
-	entityCubeModel = labhelper::loadModelFromOBJ("../scenes/test_ent.obj");;
+	entityCubeModel = labhelper::loadModelFromOBJ("../scenes/test_ent.obj");
 	//entityCubeModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_ent.obj");;
 
 
