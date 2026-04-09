@@ -22,7 +22,8 @@ using namespace glm;
 #include "hdr.h"
 #include "fbo.h"
 
-
+#include "p_header/essential_collision.h"
+using namespace col;
 ///////////////////////////////////////////////////////////////////////////////
 // Various globals
 ///////////////////////////////////////////////////////////////////////////////
@@ -80,6 +81,9 @@ labhelper::Model* sphereModel = nullptr;
 labhelper::Model* testsceneModel = nullptr;
 labhelper::Model* entityCubeModel = nullptr;
 
+std::vector<ConvexCollider> ColliderList;
+ConvexCollider entityCollider;
+
 mat4 entityCubeModelMatrix;
 mat4 testsceneModelMatrix;
 
@@ -109,6 +113,11 @@ void loadShaders(bool is_reload)
 }
 
 
+void print_vec3(std::vector<vec3>& vertices){
+		for(const glm::vec3& v: vertices)
+			printf("{ %f, %f , %f } ", v.x, v.y, v.z);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// This function is called once at the start of the program and never again
 ///////////////////////////////////////////////////////////////////////////////
@@ -131,19 +140,74 @@ void initialize()
 	testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
 	//testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
 
-	//entityCubeModel = labhelper::loadModelFromOBJ("../scenes/test_ent.obj");;
-	entityCubeModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_ent.obj");;
+	entityCubeModel = labhelper::loadModelFromOBJ("../scenes/test_ent.obj");;
+	//entityCubeModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_ent.obj");;
 
-	std::vector<glm::vec3> entityCollider{};
-	entityCollider = labhelper::loadColliders("../scenes/test_ent_Cube.dat");
 
-	std::vector<glm::vec3> collider{};
+	entityCollider = {labhelper::loadColliders("../scenes/test_ent_Cube.dat"), 0};
 
-	collider = labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat");
-	for(const glm::vec3& v: collider){
+		// loadColliders returns a std::vector<glm::vec3> type
+	printf("entityCollider: \n");
+	for(glm::vec3& v: entityCollider.vertices){
+		v += glm::vec3(0.0f,1.0f, 0.0f); // motsvarar translation
 		printf("{ %f, %f , %f } ", v.x, v.y, v.z);
 	}
 	printf("\n");
+
+	//std::vector<glm::vec3> collider{};
+	//collider = labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat");
+
+	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat"), 1);
+	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_North_Wall_North_Wall_Material.dat"), 2);
+	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_South_Wall_South_Wall_Material.dat"), 3);
+	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_West_Wall_West_Wall_Material.dat"), 4);
+
+	/*
+	// this lead to problem where outside of initialize scoop the ColliderList ConvexCollider's vertices where empty why....?
+	ConvexCollider c1 = {labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat"), 1};
+	ConvexCollider c2 = {labhelper::loadColliders("../scenes/test_scene1_North_Wall_North_Wall_Material.dat"), 2};
+	ConvexCollider c3 = {labhelper::loadColliders("../scenes/test_scene1_South_Wall_South_Wall_Material.dat"), 3};
+	ConvexCollider c4 = {labhelper::loadColliders("../scenes/test_scene1_West_Wall_West_Wall_Material.dat"), 4};
+
+	printf("entity: %zu \n",entityCollider.vertices.size());
+	printf("c1: %zu \n",c1.vertices.size());
+	printf("c2: %zu \n",c2.vertices.size());
+	printf("c3: %zu \n",c3.vertices.size());
+	printf("c4: %zu \n",c4.vertices.size());
+	*/
+
+	/*
+	printf("inside ColliderList: \n");
+	for(ConvexCollider& c: ColliderList){
+		printf("c: %zu ",c.vertices.size());
+		//std::vector<glm::vec3> vertecis_poly1(std::move(c.vertices));
+		//std::vector<glm::vec3>  normals_1(std::move(normals_of_ConvexShape(vertecis_poly1)));
+		//print_vec3(normals_1);
+		printf("\n");
+
+	}
+	*/
+
+	
+	printf("ColliderList[0] normals: \n");
+	std::vector<glm::vec3>  normals_1(normals_of_ConvexShape(ColliderList[0].vertices));
+	print_vec3(normals_1);
+	printf("\n");
+	
+	printf("Entity normals: \n");
+	std::vector<glm::vec3>  normals_e(normals_of_ConvexShape(entityCollider.vertices));
+	print_vec3(normals_e);
+	printf("\n");
+	
+
+	
+
+	/*
+	std::cout << "c1: " << c1.vertices.size() << '\n';
+	std::cout << "c2: " << c2.vertices.size() << '\n';
+	std::cout << "c3: " << c3.vertices.size() << '\n';
+	std::cout << "c4: " << c4.vertices.size() << '\n';
+	*/
 	// how and could i handle a multi file path like: "../scenes/test_scene1_*_Wall_*.dat"
 	/*
 	//find all file names in directory and find the ones containing these?
@@ -152,18 +216,13 @@ void initialize()
     filename.ends_with(".dat"))
 	*/
 
+	
 	//Get_2dEdgeVertices_of_convexShapeModel(*testsceneModel);
 
 	testsceneModelMatrix = mat4(1.0f);
 		// borde göra något mer regoröst..
 	entityCubeModelMatrix = glm::translate(glm::vec3(0.0f,1.0f, 0.0f)) * mat4(1.0f);
 
-	printf("entityCollider:");
-	for(glm::vec3& v: entityCollider){
-		v += glm::vec3(0.0f,1.0f, 0.0f); // motsvarar translation
-		printf("{ %f, %f , %f } ", v.x, v.y, v.z);
-	}
-	printf("\n");
 	//entityCollider = glm::translate(glm::vec3(0.0f,1.5f, 0.0f)) * entityCollider; 
 
 
@@ -457,6 +516,17 @@ bool handleEvents(void)
 		
 		float entitySpeed = 25.0f;
 		entityCubeModelMatrix = glm::translate( mv * entitySpeed * deltaTime) * entityCubeModelMatrix;
+		for(glm::vec3& v: entityCollider.vertices){
+			glm::vec3 new_v = glm::vec3(glm::translate( mv * entitySpeed * deltaTime) * glm::vec4(v, 1.0f));
+			v = glm::vec3(new_v.x,0.0f,new_v.z);
+		}
+			
+		/*
+		printf("what new vert: \n");
+		print_vec3(entityCollider.vertices);
+		printf("\n");
+		*/
+
 
 	   }
 
@@ -482,6 +552,28 @@ void gui()
 	labhelper::perf::drawEventsWindow();
 }
 
+void collision_resolution_test(){
+
+	//std::vector<ConvexCollider> ColliderList;
+	//std::vector<glm::vec3> entityCollider;
+	glm::vec3 responsVector = glm::vec3(0.0f);	
+	for(ConvexCollider& c: ColliderList){
+		//printf("c: %zu \n",c.vertices.size());
+		
+		if(col::collision(entityCollider, c, responsVector)){
+			entityCubeModelMatrix = glm::translate(responsVector) * entityCubeModelMatrix; // should glm::translate(responsVector*deltaTime)?
+
+			for(glm::vec3& v: entityCollider.vertices){
+			glm::vec3 new_v = glm::vec3(glm::translate(responsVector) * glm::vec4(v, 1.0f));
+			v = glm::vec3(new_v.x,0.0f,new_v.z);
+		}
+
+			//printf(" collision :) \n");
+		}
+		
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	g_window = labhelper::init_window_SDL("OpenGL Project");
@@ -501,6 +593,11 @@ int main(int argc, char* argv[])
 
 		// check events (keyboard among other)
 		stopRendering = handleEvents();
+
+		// collision check and resolution should be here
+		//printf("time to print first collider: %zu ",ColliderList[0].vertices.size()  );
+		//print_vec3(ColliderList[0].vertices);
+		collision_resolution_test();
 
 		// Inform imgui of new frame
 		labhelper::newFrame( g_window );

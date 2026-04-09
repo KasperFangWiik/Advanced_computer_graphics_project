@@ -456,6 +456,21 @@ void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vec
 			}
 		}
 
+		// Find the first vertex, find its right most  edge, find the
+		/*
+		for(uint32_t i = outline_index; i < local_edges.size(); i++){
+
+			for(uint32_t j = i+1; j < local_edges.size(); j++){
+				std::pair<uint32_t, uint32_t>& b = local_edges[j];
+				if( (a.first == b.first && a.second == b.second) || 
+					(a.first == b.second && a.second == b.first)) {
+					std::swap(local_edges[i+1], local_edges[j]);
+				}
+			}
+			
+		}
+		*/
+
 		printf(" \n After outline stuff mesh name: %s \n", shape.name.c_str());
 		printEdges(local_edges,attrib,outline_index);
 

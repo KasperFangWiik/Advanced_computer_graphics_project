@@ -13,6 +13,7 @@ source_group("Shaders" FILES ${SHADERS})
 # Build and link executable.
 add_executable ( ${PROJECT_NAME}
     main.cpp
+    p_src/essential_collision.cpp
     ${SHADERS}
     )
 
