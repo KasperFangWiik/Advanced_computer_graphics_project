@@ -437,13 +437,14 @@ void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vec
 
 		// now I need to find all edges that are shared between vertices:
 		uint32_t outline_index = 0;
-		for(uint32_t i = outline_index; i < local_edges.size(); i++){
+		const uint32_t numb_edges = local_edges.size();
+		for(uint32_t i = outline_index; i < numb_edges; i++){
 			std::pair<uint32_t, uint32_t>& a = local_edges[i];
 			
 			//for each triangle check if edges are(xi,yi) == (xt,yt) or (xi,yi) == (yt, xt)
 			// if true move the edge to the back and ceap count of where the exceptible edges are indexed from, the index is called outline_index
 			uint32_t swap_counter = 0;
-			for(uint32_t j = i+1; j < local_edges.size(); j++){
+			for(uint32_t j = i+1; j < numb_edges; j++){
 				std::pair<uint32_t, uint32_t>& b = local_edges[j];
 				if( (a.first == b.first && a.second == b.second) || 
 					(a.first == b.second && a.second == b.first)) {
@@ -456,28 +457,25 @@ void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vec
 			}
 		}
 
-		// Find the first vertex, find its right most  edge, find the
-		/*
-		for(uint32_t i = outline_index; i < local_edges.size(); i++){
-
-			for(uint32_t j = i+1; j < local_edges.size(); j++){
+		// Sort edges in matching first and second vertices to get the right 2d perimiter
+		for(uint32_t i = outline_index; i < numb_edges; i++){
+			std::pair<uint32_t, uint32_t>& a = local_edges[i];
+			for(uint32_t j = i+1; j < numb_edges; j++){
 				std::pair<uint32_t, uint32_t>& b = local_edges[j];
-				if( (a.first == b.first && a.second == b.second) || 
-					(a.first == b.second && a.second == b.first)) {
+				if( a.second == b.first) {
 					std::swap(local_edges[i+1], local_edges[j]);
 				}
 			}
-			
 		}
-		*/
+		
 
 		printf(" \n After outline stuff mesh name: %s \n", shape.name.c_str());
 		printEdges(local_edges,attrib,outline_index);
 
 		std::vector<glm::vec3> local_vertices;
-		local_vertices.reserve(local_edges.size());
+		local_vertices.reserve(numb_edges);
 
-		for(int i = outline_index; i < local_edges.size(); i++){
+		for(int i = outline_index; i < numb_edges; i++){
 			local_vertices.emplace_back(
 				glm::vec3(attrib.vertices[local_edges[i].first],
 						  attrib.vertices[local_edges[i].first+1],

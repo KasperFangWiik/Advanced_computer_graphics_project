@@ -137,8 +137,8 @@ void initialize()
 	landingpadModel = labhelper::loadModelFromOBJ("../scenes/landingpad.obj");
 	sphereModel = labhelper::loadModelFromOBJ("../scenes/sphere.obj");
 
-	testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
-	//testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
+	//testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
+	testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
 
 	entityCubeModel = labhelper::loadModelFromOBJ("../scenes/test_ent.obj");;
 	//entityCubeModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_ent.obj");;
@@ -198,8 +198,6 @@ void initialize()
 	std::vector<glm::vec3>  normals_e(normals_of_ConvexShape(entityCollider.vertices));
 	print_vec3(normals_e);
 	printf("\n");
-	
-
 	
 
 	/*

@@ -83,8 +83,8 @@ std::vector<glm::vec3> get_vertecis_of_ConvexShape(sf::ConvexShape& colid_sprite
 
 glm::vec3 calc_normal_of_lineSegment(const glm::vec3& starting_point, const glm::vec3& end_point){
 
-    glm::vec3 dxz = end_point - starting_point;
-    glm::vec3 normal = glm::vec3( dxz.z, 0.0f, -dxz.x) ; //(x,y,z)
+    glm::vec3 edge = end_point - starting_point;
+    glm::vec3 normal = glm::vec3( edge.z, 0.0f, -edge.x) ; //(x,y,z)
     
 
     if (normal != glm::vec3(0.0f)) 
@@ -200,12 +200,6 @@ bool collision(sf::CircleShape& circle1, sf::ConvexShape& poly2, sf::Vector2f& r
     float radius = circle1.getRadius();
     sf::Vector2f circle1_ceter = circle1.getTransform() * (circle1.getOrigin() + sf::Vector2f{ radius, radius });
     //sf::Vector2f circle1_ceter = circle1.getTransform() * circle1.getGeometricCenter();//circle1.getOrigin();
-
-
-    //sf::Vector2f offset_ori = poly2.getOrigin() + (poly2.getSize() / 2.f); // { ori.x + sizeer.x/2 ,ori.y + sizeer.y /2 };
-    //sf::Vector2f rect2_ceter = poly2.getTransform() * offset_ori; // n.value.getOrigin();//n.value.getSize() / 2.f;// rect2.getOrigin();
-    //sf::Vector2f rect2_ceter   = rect2.getTransform() * rect2.getOrigin();
-
 
     std::vector<sf::Vector2f> vertecis_poly2(std::move(get_vertecis_of_ConvexShape(poly2)));
     std::vector<sf::Vector2f> normals_2(std::move(normals_of_ConvexShape(vertecis_poly2)));
