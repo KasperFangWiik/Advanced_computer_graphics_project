@@ -1,6 +1,6 @@
 # Blender 5.1.0
 # www.blender.org
-mtllib Untitled.mtl
+mtllib Mball.mtl
 o Mball
 v 0.300000 0.387940 -0.300000
 v 0.300000 0.300000 -0.387940
@@ -291,6 +291,7 @@ vn 0.4182 0.2058 0.8847
 vn 0.4182 -0.8847 -0.2058
 vn 0.4106 -0.8927 0.1857
 s 1
+usemtl Material
 f 3//3 2//2 1//1
 f 3//3 4//4 2//2
 f 5//5 6//6 4//4

@@ -80,10 +80,13 @@ labhelper::Model* sphereModel = nullptr;
 
 labhelper::Model* testsceneModel = nullptr;
 labhelper::Model* entityCubeModel = nullptr;
+labhelper::Model* testSphereModel = nullptr;
 
 std::vector<ConvexCollider> ColliderList;
 ConvexCollider entityCollider;
+ConvexCollider testSphereCollider;
 
+mat4 testSphereModelMatrix;
 mat4 entityCubeModelMatrix;
 mat4 testsceneModelMatrix;
 
@@ -141,8 +144,15 @@ void initialize()
 	testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
 
 	entityCubeModel = labhelper::loadModelFromOBJ("../scenes/test_ent.obj");
-	//entityCubeModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_ent.obj");;
+	//entityCubeModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_ent.obj");
 
+	testSphereModel = labhelper::loadModelFromOBJ("../scenes/Mball.obj");
+
+	// std::vector<glm::vec3> test = {glm::vec3(0.0f)};
+	testSphereCollider = {std::vector<glm::vec3>{glm::vec3(0.0f),glm::vec3(0.557555f,0.0f,0.0f)}, 5};
+
+	//for(glm::vec3& v: testSphereCollider.vertices)
+		testSphereCollider.vertices[0] += glm::vec3(10.0f, 0.0f, 0.0f); // glm::vec3(10.0f, 0.557555f, 0.0f);
 
 	entityCollider = {labhelper::loadColliders("../scenes/test_ent_Cube.dat"), 0};
 
@@ -161,32 +171,7 @@ void initialize()
 	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_North_Wall_North_Wall_Material.dat"), 2);
 	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_South_Wall_South_Wall_Material.dat"), 3);
 	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_West_Wall_West_Wall_Material.dat"), 4);
-
-	/*
-	// this lead to problem where outside of initialize scoop the ColliderList ConvexCollider's vertices where empty why....?
-	ConvexCollider c1 = {labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat"), 1};
-	ConvexCollider c2 = {labhelper::loadColliders("../scenes/test_scene1_North_Wall_North_Wall_Material.dat"), 2};
-	ConvexCollider c3 = {labhelper::loadColliders("../scenes/test_scene1_South_Wall_South_Wall_Material.dat"), 3};
-	ConvexCollider c4 = {labhelper::loadColliders("../scenes/test_scene1_West_Wall_West_Wall_Material.dat"), 4};
-
-	printf("entity: %zu \n",entityCollider.vertices.size());
-	printf("c1: %zu \n",c1.vertices.size());
-	printf("c2: %zu \n",c2.vertices.size());
-	printf("c3: %zu \n",c3.vertices.size());
-	printf("c4: %zu \n",c4.vertices.size());
-	*/
-
-	/*
-	printf("inside ColliderList: \n");
-	for(ConvexCollider& c: ColliderList){
-		printf("c: %zu ",c.vertices.size());
-		//std::vector<glm::vec3> vertecis_poly1(std::move(c.vertices));
-		//std::vector<glm::vec3>  normals_1(std::move(normals_of_ConvexShape(vertecis_poly1)));
-		//print_vec3(normals_1);
-		printf("\n");
-
-	}
-	*/
+	ColliderList.emplace_back(testSphereCollider);
 
 	
 	printf("ColliderList[0] normals: \n");
@@ -220,6 +205,9 @@ void initialize()
 	testsceneModelMatrix = mat4(1.0f);
 		// borde göra något mer regoröst..
 	entityCubeModelMatrix = glm::translate(glm::vec3(0.0f,1.0f, 0.0f)) * mat4(1.0f);
+
+	testSphereModelMatrix = glm::translate(glm::vec3(10.0f,0.557555f, 0.0f)) * mat4(1.0f);
+	//testSphereModelMatrix = glm::translate(glm::vec3(10.0f,0.557555f, 0.0f)) * mat4(1.0f);
 
 	//entityCollider = glm::translate(glm::vec3(0.0f,1.5f, 0.0f)) * entityCollider; 
 
@@ -316,9 +304,18 @@ void drawScene(GLuint currentShaderProgram,
 	                          inverse(transpose(viewMatrix * entityCubeModelMatrix)));
 
 	labhelper::render(entityCubeModel);
-	
-	
 
+
+		//render entity sphere 
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
+	                          projectionMatrix * viewMatrix * testSphereModelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", viewMatrix * testSphereModelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
+	                          inverse(transpose(viewMatrix * testSphereModelMatrix)));
+
+	labhelper::render(testSphereModel);
+	
+	
 	// Fighter
 	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
 	                          projectionMatrix * viewMatrix * fighterModelMatrix);
@@ -512,7 +509,7 @@ bool handleEvents(void)
 		if(up){ mv.z = -mv.z; }
 		if(left){ mv.x = -mv.x; }
 		
-		float entitySpeed = 25.0f;
+		float entitySpeed = 15.0f;
 		entityCubeModelMatrix = glm::translate( mv * entitySpeed * deltaTime) * entityCubeModelMatrix;
 		for(glm::vec3& v: entityCollider.vertices){
 			glm::vec3 new_v = glm::vec3(glm::translate( mv * entitySpeed * deltaTime) * glm::vec4(v, 1.0f));
@@ -618,6 +615,8 @@ int main(int argc, char* argv[])
 	labhelper::freeModel(sphereModel);
 
 	labhelper::freeModel(testsceneModel);
+	labhelper::freeModel(entityCubeModel);
+	labhelper::freeModel(testSphereModel);
 
 	// Shut down everything. This includes the window and all other subsystems.
 	labhelper::shutDown(g_window);

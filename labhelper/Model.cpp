@@ -388,7 +388,6 @@ void saveColiderToFile(std::vector<glm::vec3>& colliderVertices, std::string pat
 		mat_file << std::to_string(v.x) <<" "<< std::to_string(v.y)<<" "<< std::to_string(v.z)<<"\n";
 	}
 	mat_file.close();
-	
 }
 
 void printEdges(std::vector<std::pair<uint32_t, uint32_t>>& edges, tinyobj::attrib_t& attrib, uint32_t offset){
@@ -475,7 +474,7 @@ void Get_2dEdgeVertices_of_convexShapeTinyobj(tinyobj::attrib_t& attrib,std::vec
 		std::vector<glm::vec3> local_vertices;
 		local_vertices.reserve(numb_edges);
 
-		for(int i = outline_index; i < numb_edges; i++){
+		for(uint32_t i = outline_index; i < numb_edges; i++){
 			local_vertices.emplace_back(
 				glm::vec3(attrib.vertices[local_edges[i].first],
 						  attrib.vertices[local_edges[i].first+1],
