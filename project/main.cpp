@@ -124,6 +124,7 @@ mat4 testSphereModelMatrix2;
 std::vector<glm::mat4> ListSphereModelMatrix;
 std::vector<Entity> ProjectileList; //should i have this
 bool projectile_exists;
+unsigned int bounce_counter;
 
 mat4 entityCubeModelMatrix;
 vec3 oldDir;
@@ -196,6 +197,7 @@ void initialize()
 	ListSphereModelMatrix.reserve(5);
 	ProjectileList.reserve(5);
 	projectile_exists = false;
+	bounce_counter = 0;
 	ProjectileList.emplace_back(Entity{testSphereCollider,glm::mat4(0.0f),glm::vec3(0.0f),false});
 
 
@@ -606,15 +608,17 @@ bool handleEvents(void)
 
 		// moving diagonaly
 		const float ONE_DIV_SQRTWO = 0.70706781f;
-		if ((up && right) || (up && left) || 
-		  (down && right) || (down && left))
+		if((up && right) || (up && left) || 
+		   (down && right) || (down && left))
 		{
 			mv.x = ONE_DIV_SQRTWO; 
 			mv.z = -ONE_DIV_SQRTWO;
-		}
-
+		} 
+		
 		if(up){ mv.z = -mv.z; }
 		if(left){ mv.x = -mv.x; }
+
+				oldDir = mv;
 		
 		float entitySpeed = 15.0f;
 		entityCubeModelMatrix = glm::translate( mv * entitySpeed * deltaTime) * entityCubeModelMatrix;
@@ -623,7 +627,6 @@ bool handleEvents(void)
 			glm::vec3 new_v = glm::vec3(glm::translate( mv * entitySpeed * deltaTime) * glm::vec4(v, 1.0f));
 			v = glm::vec3(new_v.x,0.0f,new_v.z);
 		}
-		oldDir = mv;
 	   }
 
 	   if(state[SDL_SCANCODE_SPACE]){
@@ -716,6 +719,7 @@ void projectile_collision_resolution(std::vector<Entity>& entitys){
 		if(e.active == true) 
 			for(std::vector<glm::vec3>& c: ColliderList)
 				if(col::collision(e.collider, c, responsVector)){
+
 					projectile_exists= false;
 					e.active = false;
 					//printf("projectile collided");
@@ -729,8 +733,13 @@ void projectile_collision_resolution(){
 		if(e.active == true)
 			for(std::vector<glm::vec3>& c: ColliderList)
 				if(col::collision(e.collider, c, responsVector)){
-					projectile_exists= false;
-					e.active = false;
+					e.move_entity_circle(glm::translate(responsVector));
+					e.dir = glm::reflect(e.dir, glm::normalize(responsVector));
+					if ( bounce_counter++ == 2){
+						projectile_exists= false;
+						e.active = false;
+						bounce_counter = 0;
+					}
 					//printf("projectile collided");
 				}
 }
