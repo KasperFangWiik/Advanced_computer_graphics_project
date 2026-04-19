@@ -113,16 +113,18 @@ const std::array<float, 2> min_max_circle_projection_distance(
                             const std::vector<glm::vec3>& vertices){
 
     const glm::vec3& circleCenter = vertices[0];
-    const float& radius = vertices[1].x;
+    const float& radius = vertices[1].r;
 
     const float& circle_pos_on_axis = glm::dot(circleCenter, projection_axis);
 
     float min_dist = circle_pos_on_axis - radius;
     float max_dist = circle_pos_on_axis + radius;
-
+    /*
+    // Chat says i can remove this...
     if (min_dist > max_dist) {
         std::swap(min_dist, max_dist);
     }
+    */
     return { min_dist, max_dist };
 }
 
@@ -159,62 +161,61 @@ const std::array<float, 2> min_max_projection_distance(
 
 glm::vec3 closest_polyVertex_to_point(const glm::vec3& point, const std::vector<glm::vec3>& rect2_vertices) {
 
-    glm::vec3 closest_vertex{};
+    glm::vec3 DirVecToClosestVertex{};
     float minnfloatVal = std::numeric_limits<float>::max();
     for (const glm::vec3& n : rect2_vertices) {
         glm::vec3 tmp_v = n - point;
         float squaredDistToCenter = glm::dot(tmp_v, tmp_v);
         if (minnfloatVal > squaredDistToCenter) {
             minnfloatVal = squaredDistToCenter;
-            closest_vertex = n;
+            DirVecToClosestVertex = tmp_v;
         }
     }
-    return closest_vertex;
+    return DirVecToClosestVertex;
 }
 
 const glm::vec3 get_circle_normal(const vec3& circleCenter, const std::vector<glm::vec3>& PoligonVertices){
 
-    const glm::vec3& closestVertex = closest_polyVertex_to_point(circleCenter, PoligonVertices);
-    const glm::vec3& normal = (closestVertex - circleCenter);
-    return  (normal != glm::vec3(0.0f))? glm::normalize(normal) : normal;
-
+    const glm::vec3& DirVecToClosestVertex = closest_polyVertex_to_point(circleCenter, PoligonVertices);
+    //const glm::vec3& normal = DirVecToClosestVertex;
+    return  (DirVecToClosestVertex != glm::vec3(0.0f))? glm::normalize(DirVecToClosestVertex) : DirVecToClosestVertex;
 }
 
-std::vector<glm::vec3> get_SAT_normals(ConvexCollider& poly1, ConvexCollider& poly2) {
+std::vector<glm::vec3> get_SAT_normals(std::vector<glm::vec3>& poly1, std::vector<glm::vec3>& poly2) {
 
-    size_t numbVert1 = poly1.vertices.size();
-    size_t numbVert2 = poly2.vertices.size();
+    size_t numbVert1 = poly1.size();
+    size_t numbVert2 = poly2.size();
 
     std::vector<glm::vec3>  normals;
     normals.reserve(numbVert1 + numbVert2); // the number of normals are equal to number of vertices when over 3 vertices exists right?
 
     if(numbVert1 == 2)
-        normals.emplace_back(get_circle_normal(poly1.vertices[0], poly2.vertices));
+        normals.emplace_back(get_circle_normal(poly1[0], poly2));
     else {
-        const std::vector<glm::vec3>& n1 = normals_of_ConvexShape(poly1.vertices);
+        const std::vector<glm::vec3>& n1 = normals_of_ConvexShape(poly1);
         normals.insert(normals.end(), n1.begin(), n1.end());
     }
 
     if(numbVert2 == 2)
-        normals.emplace_back(get_circle_normal(poly2.vertices[0], poly1.vertices));
+        normals.emplace_back(get_circle_normal(poly2[0], poly1));
     else {
-        const std::vector<glm::vec3>& n2 = normals_of_ConvexShape(poly2.vertices);
+        const std::vector<glm::vec3>& n2 = normals_of_ConvexShape(poly2);
         normals.insert(normals.end(), n2.begin(), n2.end());
     }
 
     return normals; 
 }
 
-bool circle_collision(ConvexCollider& circle1, ConvexCollider& circle2, glm::vec3& respons_vector) {
+bool circle_collision(std::vector<glm::vec3>& circle1, std::vector<glm::vec3>& circle2, glm::vec3& respons_vector) {
 
     CollisionResponseData respons_data = {};
 
-    const glm::vec3& center_cercle1 = circle1.vertices[0];
-    const glm::vec3& center_cercle2 = circle2.vertices[0];
+    const glm::vec3& center_cercle1 = circle1[0];
+    const glm::vec3& center_cercle2 = circle2[0];
 
     // maby we only need one center and another radius value for the circle, like only x has the radius value...(x,0.0f,0.0f) 
-    const float& radius1 = glm::distance(circle1.vertices[0], circle1.vertices[2]); // circle1.vertices[2].r;// rgb so r should contain same as x...
-    const float& radius2 = glm::distance(circle2.vertices[0], circle2.vertices[2]); // circle2.vertices[2].r;
+    const float& radius1 = circle1[1].r;//glm::distance(circle1[0], circle1[2]); // circle1.vertices[2].r;// rgb so r should contain same as x...
+    const float& radius2 = circle2[1].r;//glm::distance(circle2[0], circle2[2]); // circle2.vertices[2].r;
 
     glm::vec3 Dir_vector_from_1to2 = (center_cercle1 - center_cercle2);
     const float& distance_between = glm::length(Dir_vector_from_1to2); //glm::distance(center_cercle1, center_cercle2);
@@ -232,10 +233,10 @@ bool circle_collision(ConvexCollider& circle1, ConvexCollider& circle2, glm::vec
     return false;
 }
 
-bool collision(ConvexCollider& poly1, ConvexCollider& poly2, glm::vec3& respons_vector) {
+bool collision(std::vector<glm::vec3>& poly1, std::vector<glm::vec3>& poly2, glm::vec3& respons_vector) {
 
     // this should work for circle v circle intersections(might lead to tunneling because projectiles move faster.....) 
-    if (poly1.vertices.size() == 2 && poly2.vertices.size() == 2)
+    if (poly1.size() == 2 && poly2.size() == 2)
         return circle_collision(poly1, poly2, respons_vector);
 
     // future maby make one function that returns all normals, easier to change between circle and convex polygon collision.
@@ -253,8 +254,8 @@ bool collision(ConvexCollider& poly1, ConvexCollider& poly2, glm::vec3& respons_
 
     CollisionResponseData respons_data = { std::numeric_limits<float>::max(), {} };
     for (const glm::vec3& n : normals) {
-        const std::array<float, 2> min_max_dist1 = min_max_projection_distance(n, poly1.vertices);
-        const std::array<float, 2> min_max_dist2 = min_max_projection_distance(n, poly2.vertices);
+        const std::array<float, 2> min_max_dist1 = min_max_projection_distance(n, poly1);
+        const std::array<float, 2> min_max_dist2 = min_max_projection_distance(n, poly2);
 
         if (!check_SAT_axis_overlap(n, min_max_dist1, min_max_dist2, respons_data))
             return false;

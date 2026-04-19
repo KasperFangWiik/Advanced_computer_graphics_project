@@ -74,7 +74,7 @@ const std::array<float, 2> min_max_projection_distance(
                                                 const glm::vec3& projection_axis,
                                                 const std::vector<glm::vec3>& vertices);
 
-bool collision(ConvexCollider& poly1, ConvexCollider& poly2, glm::vec3& respons_vector);
+bool collision(std::vector<glm::vec3>& poly1, std::vector<glm::vec3>& poly2, glm::vec3& respons_vector);
 
 /*
 ------------------------------------------------------------------------------------------------------------------

@@ -71,6 +71,35 @@ float cameraSpeed = 50.f;//10.f;
 
 vec3 worldUp(0.0f, 1.0f, 0.0f);
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Entity
+///////////////////////////////////////////////////////////////////////////////
+
+class Entity {
+	//private:
+	public:
+	std::vector<glm::vec3> collider; // probably dont need id's....
+	glm::mat4 modelMatrix;
+	glm::vec3 dir;
+	bool active;
+
+	//public:
+	void move_entity(glm::mat4 matrix){
+		modelMatrix = matrix * modelMatrix;
+		for(glm::vec3& v: collider){
+			glm::vec3 new_v = glm::vec3(matrix * glm::vec4(v, 1.0f));
+			v = glm::vec3(new_v.x,0.0f,new_v.z);
+		}
+	}
+
+	void move_entity_circle(glm::mat4 matrix){
+		modelMatrix = matrix * modelMatrix;
+		glm::vec3 new_v = glm::vec3(matrix * glm::vec4(collider[0] , 1.0f));
+		collider[0] = glm::vec3(new_v.x,0.0f,new_v.z);
+	}
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // Models
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,12 +111,24 @@ labhelper::Model* testsceneModel = nullptr;
 labhelper::Model* entityCubeModel = nullptr;
 labhelper::Model* testSphereModel = nullptr;
 
-std::vector<ConvexCollider> ColliderList;
-ConvexCollider entityCollider;
-ConvexCollider testSphereCollider;
+std::vector<std::vector<glm::vec3>> ColliderList;
+std::vector<glm::vec3> entityCollider;
+std::vector<glm::vec3> testSphereCollider;
+
+std::vector<glm::vec3> enemyCubeCollider;
 
 mat4 testSphereModelMatrix;
+
+mat4 testSphereModelMatrix2;
+
+std::vector<glm::mat4> ListSphereModelMatrix;
+std::vector<Entity> ProjectileList; //should i have this
+bool projectile_exists;
+
 mat4 entityCubeModelMatrix;
+vec3 oldDir;
+
+mat4 enemyCubeModelMatrix;
 mat4 testsceneModelMatrix;
 
 mat4 roomModelMatrix;
@@ -140,49 +181,64 @@ void initialize()
 	landingpadModel = labhelper::loadModelFromOBJ("../scenes/landingpad.obj");
 	sphereModel = labhelper::loadModelFromOBJ("../scenes/sphere.obj");
 
-	//testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
-	testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
+	testsceneModel = labhelper::loadModelFromOBJ("../scenes/test_scene1.obj");
+	//testsceneModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_scene1.obj");
 
 	entityCubeModel = labhelper::loadModelFromOBJ("../scenes/test_ent.obj");
 	//entityCubeModel = labhelper::loadModelFromOBJ_n_addColiderFile("../scenes/test_ent.obj");
 
 	testSphereModel = labhelper::loadModelFromOBJ("../scenes/Mball.obj");
 
-	// std::vector<glm::vec3> test = {glm::vec3(0.0f)};
-	testSphereCollider = {std::vector<glm::vec3>{glm::vec3(0.0f),glm::vec3(0.557555f,0.0f,0.0f)}, 5};
 
-	//for(glm::vec3& v: testSphereCollider.vertices)
-		testSphereCollider.vertices[0] += glm::vec3(10.0f, 0.0f, 0.0f); // glm::vec3(10.0f, 0.557555f, 0.0f);
+	oldDir = vec3(0.0f);
+	testSphereCollider = {glm::vec3(0.0f), glm::vec3(0.557555f,0.0f,0.0f)};
 
-	entityCollider = {labhelper::loadColliders("../scenes/test_ent_Cube.dat"), 0};
+	ListSphereModelMatrix.reserve(5);
+	ProjectileList.reserve(5);
+	projectile_exists = false;
+	ProjectileList.emplace_back(Entity{testSphereCollider,glm::mat4(0.0f),glm::vec3(0.0f),false});
+
+
+	entityCollider = labhelper::loadColliders("../scenes/test_ent_Cube.dat");
+	enemyCubeCollider = labhelper::loadColliders("../scenes/test_ent_Cube.dat");
+
+
+	// collider for stationary sphere
+	testSphereCollider[0] += glm::vec3(10.0f, 0.0f, 0.0f); // glm::vec3(10.0f, 0.557555f, 0.0f);
 
 		// loadColliders returns a std::vector<glm::vec3> type
-	printf("entityCollider: \n");
-	for(glm::vec3& v: entityCollider.vertices){
+	//printf("entityCollider: \n");
+	for(glm::vec3& v: entityCollider){
 		v += glm::vec3(0.0f,1.0f, 0.0f); // motsvarar translation
-		printf("{ %f, %f , %f } ", v.x, v.y, v.z);
+		//printf("{ %f, %f , %f } ", v.x, v.y, v.z);
 	}
-	printf("\n");
+	//printf("\n");
+
+	for(glm::vec3& v: enemyCubeCollider){
+		//glm::vec3(0.0f,1.0f, 10.0f)
+		v += glm::vec3(0.0f,1.0f, 10.0f); // motsvarar translation
+	}
 
 	//std::vector<glm::vec3> collider{};
 	//collider = labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat");
 
-	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat"), 1);
-	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_North_Wall_North_Wall_Material.dat"), 2);
-	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_South_Wall_South_Wall_Material.dat"), 3);
-	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_West_Wall_West_Wall_Material.dat"), 4);
+	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_East_Wall_East_Wall_Material.dat"));
+	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_North_Wall_North_Wall_Material.dat"));
+	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_South_Wall_South_Wall_Material.dat"));
+	ColliderList.emplace_back(labhelper::loadColliders("../scenes/test_scene1_West_Wall_West_Wall_Material.dat"));
 	ColliderList.emplace_back(testSphereCollider);
+	ColliderList.emplace_back(enemyCubeCollider);
 
 	
-	printf("ColliderList[0] normals: \n");
-	std::vector<glm::vec3>  normals_1(normals_of_ConvexShape(ColliderList[0].vertices));
-	print_vec3(normals_1);
-	printf("\n");
+	//printf("ColliderList[0] normals: \n");
+	std::vector<glm::vec3>  normals_1(normals_of_ConvexShape(ColliderList[0]));
+	//print_vec3(normals_1);
+	//printf("\n");
 	
-	printf("Entity normals: \n");
-	std::vector<glm::vec3>  normals_e(normals_of_ConvexShape(entityCollider.vertices));
-	print_vec3(normals_e);
-	printf("\n");
+	//printf("Entity normals: \n");
+	std::vector<glm::vec3>  normals_e(normals_of_ConvexShape(entityCollider));
+	//print_vec3(normals_e);
+	//printf("\n");
 	
 
 	/*
@@ -206,7 +262,11 @@ void initialize()
 		// borde göra något mer regoröst..
 	entityCubeModelMatrix = glm::translate(glm::vec3(0.0f,1.0f, 0.0f)) * mat4(1.0f);
 
+	enemyCubeModelMatrix = glm::translate(glm::vec3(0.0f,1.0f, 10.0f)) * mat4(1.0f);
+
 	testSphereModelMatrix = glm::translate(glm::vec3(10.0f,0.557555f, 0.0f)) * mat4(1.0f);
+	
+	testSphereModelMatrix2 = glm::translate(glm::vec3(-10.0f,0.557555f, 0.0f)) * mat4(1.0f);
 	//testSphereModelMatrix = glm::translate(glm::vec3(10.0f,0.557555f, 0.0f)) * mat4(1.0f);
 
 	//entityCollider = glm::translate(glm::vec3(0.0f,1.5f, 0.0f)) * entityCollider; 
@@ -250,6 +310,21 @@ void drawBackground(const mat4& viewMatrix, const mat4& projectionMatrix)
 }
 
 
+void UseSlowModelRender(
+	GLuint currentShaderProgram, 
+	const mat4& viewMatrix, 
+	const mat4& projectionMatrix,
+	const labhelper::Model* model, const glm::mat4& modelMatrix
+){
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
+	                          projectionMatrix * viewMatrix * modelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", viewMatrix * modelMatrix);
+	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
+	                          inverse(transpose(viewMatrix * modelMatrix)));
+	
+	labhelper::render(model);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// This function is used to draw the main objects on the scene
 ///////////////////////////////////////////////////////////////////////////////
@@ -276,54 +351,43 @@ void drawScene(GLuint currentShaderProgram,
 	// camera
 	labhelper::setUniformSlow(currentShaderProgram, "viewInverse", inverse(viewMatrix));
 
-	/*
 	// landing pad
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
-	                          projectionMatrix * viewMatrix * landingPadModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", viewMatrix * landingPadModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
-	                          inverse(transpose(viewMatrix * landingPadModelMatrix)));
-
-	labhelper::render(landingpadModel);
-	*/
+	//UseSlowModelRender(currentShaderProgram,viewMatrix,projectionMatrix, landingpadModel, landingPadModelMatrix);
 
 	// test scene
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
-	                          projectionMatrix * viewMatrix * testsceneModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", viewMatrix * testsceneModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
-	                          inverse(transpose(viewMatrix * testsceneModelMatrix)));
-
-	labhelper::render(testsceneModel);
+	UseSlowModelRender(currentShaderProgram,viewMatrix,projectionMatrix, testsceneModel, testsceneModelMatrix);
 	
 	//render entity cube
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
-	                          projectionMatrix * viewMatrix * entityCubeModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", viewMatrix * entityCubeModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
-	                          inverse(transpose(viewMatrix * entityCubeModelMatrix)));
+	UseSlowModelRender(currentShaderProgram,viewMatrix,projectionMatrix, entityCubeModel, entityCubeModelMatrix);
 
-	labhelper::render(entityCubeModel);
+	// render enemy cube
+	UseSlowModelRender(currentShaderProgram,viewMatrix,projectionMatrix, entityCubeModel, enemyCubeModelMatrix);
 
+	//render entity sphere 
+	UseSlowModelRender(currentShaderProgram,viewMatrix,projectionMatrix, testSphereModel, testSphereModelMatrix);
 
-		//render entity sphere 
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
-	                          projectionMatrix * viewMatrix * testSphereModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", viewMatrix * testSphereModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
-	                          inverse(transpose(viewMatrix * testSphereModelMatrix)));
+	//render entity sphere2 
+	UseSlowModelRender(currentShaderProgram,viewMatrix,projectionMatrix, testSphereModel, testSphereModelMatrix2);
 
-	labhelper::render(testSphereModel);
+	/*
+	if(ListSphereModelMatrix.size()){
+		for(const mat4& ModelMatrix: ListSphereModelMatrix){
+			UseSlowModelRender(currentShaderProgram,viewMatrix,projectionMatrix, testSphereModel, ModelMatrix);
+		}
+	}
+		*/
+
 	
+	//if(ProjectileList.size()){
+		for(const Entity& p: ProjectileList){
+			if(p.active == true)
+				UseSlowModelRender(currentShaderProgram,viewMatrix,projectionMatrix, testSphereModel, p.modelMatrix);
+		}
+	//}
 	
 	// Fighter
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewProjectionMatrix",
-	                          projectionMatrix * viewMatrix * fighterModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "modelViewMatrix", viewMatrix * fighterModelMatrix);
-	labhelper::setUniformSlow(currentShaderProgram, "normalMatrix",
-	                          inverse(transpose(viewMatrix * fighterModelMatrix)));
+	//UseSlowModelRender(currentShaderProgram,viewMatrix,projectionMatrix,fighterModel, fighterModelMatrix);
 
-	labhelper::render(fighterModel);
 }
 
 
@@ -415,6 +479,49 @@ bool handleEvents(void)
 				labhelper::showGUI();
 			}
 		}
+
+
+		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_RIGHT
+		   && (!labhelper::isGUIvisible() || !ImGui::GetIO().WantCaptureMouse))
+		{
+			//g_isMouseDragging = true;
+			int x;
+			int y;
+			SDL_GetMouseState(&x, &y);
+			/*
+			float wx = x / float(windowWidth);
+			float wy = y / float(windowHeight);
+			glm::unProject();
+
+			*/
+
+			// cameraPosition
+			/*
+			vec3 cameraPosition(-70.0f, 50.0f, 70.0f);
+			vec3 cameraDirection = normalize(vec3(0.0f) - cameraPosition);
+			
+			
+			projectionMatrix
+         	worldSpaceLightPos
+			*/
+
+			// t = (–d –n•o) / (n•d) 
+			/*
+			vec3 o = cameraPosition; 
+			vec3 d = normalize(vec3(x, y, 1.0f) - o); // srhould z be zero o
+			vec3 n = vec3(0.0f, 1.0f, 0.0f);
+
+			vec3 t = (-d * glm::dot(-n,o)) / glm::dot(n,d);
+			vec3 pos = o + d*t;
+
+			testSphereModelMatrix2 = glm::mat4(1.0f);
+			//testSphereModelMatrix2 = glm::translate(glm::vec3(pos.x,0.557555f, pos.z)) * testSphereModelMatrix2;
+
+			testSphereModelMatrix2 = glm::translate(pos) * testSphereModelMatrix2;
+			*/
+
+		}
+
 		if(event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT
 		   && (!labhelper::isGUIvisible() || !ImGui::GetIO().WantCaptureMouse))
 		{
@@ -511,18 +618,36 @@ bool handleEvents(void)
 		
 		float entitySpeed = 15.0f;
 		entityCubeModelMatrix = glm::translate( mv * entitySpeed * deltaTime) * entityCubeModelMatrix;
-		for(glm::vec3& v: entityCollider.vertices){
+
+		for(glm::vec3& v: entityCollider){
 			glm::vec3 new_v = glm::vec3(glm::translate( mv * entitySpeed * deltaTime) * glm::vec4(v, 1.0f));
 			v = glm::vec3(new_v.x,0.0f,new_v.z);
 		}
-			
-		/*
-		printf("what new vert: \n");
-		print_vec3(entityCollider.vertices);
-		printf("\n");
-		*/
+		oldDir = mv;
+	   }
+
+	   if(state[SDL_SCANCODE_SPACE]){
+		// creat a new sphere x distance from point in oldDir
+
+		if(!projectile_exists){
+		glm::vec3 entityPosition = glm::vec3(entityCubeModelMatrix[3]);
+		glm::vec3 newSpherePos = ( (2.0f*oldDir) + entityPosition );
+		//glm::vec3 new_v = glm::vec3(glm::translate(new_sphere_pos) * glm::vec4(new_sphere_pos, 1.0f));
 
 
+		glm::mat4 new_SphereModelMatrix = glm::mat4(1.0f);
+		new_SphereModelMatrix = glm::translate(glm::vec3(newSpherePos.x, 0.557555f, newSpherePos.z)) * new_SphereModelMatrix;
+		
+		// maby have a set/add new projectile function...
+		Entity& newProjectile = ProjectileList[0];
+		newProjectile.modelMatrix = new_SphereModelMatrix;
+		newProjectile.collider[0] = newSpherePos;
+		newProjectile.dir = oldDir;
+		newProjectile.active = true;
+		//ProjectileList.emplace_back(Entity{testSphereCollider,new_SphereModelMatrix,oldDir,true});
+		projectile_exists = true;
+		}
+		
 	   }
 
 
@@ -548,25 +673,66 @@ void gui()
 }
 
 void collision_resolution_test(){
+		glm::vec3 entityPosition = glm::vec3(entityCubeModelMatrix[3]);
+		glm::vec3 enemyPosition = glm::vec3(enemyCubeModelMatrix[3]);
+		glm::vec3 enemyDir = normalize(entityPosition - enemyPosition);
+
+		float enemySpeed = 10.0f;
+		enemyCubeModelMatrix = glm::translate( enemyDir * enemySpeed * deltaTime) * enemyCubeModelMatrix;
+
+		//for(glm::vec3& v: enemyCubeCollider.vertices){
+		for(glm::vec3& v: ColliderList.back()){
+		//v += glm::vec3(0.0f,1.0f, 0.0f); // motsvarar translation
+
+			glm::vec3 new_v = glm::vec3(glm::translate( enemyDir * enemySpeed * deltaTime) * glm::vec4(v, 1.0f));
+			v = glm::vec3(new_v.x,0.0f,new_v.z);
+		}
 
 	//std::vector<ConvexCollider> ColliderList;
 	//std::vector<glm::vec3> entityCollider;
 	glm::vec3 responsVector = glm::vec3(0.0f);	
-	for(ConvexCollider& c: ColliderList){
+	for(std::vector<glm::vec3>& c: ColliderList){
 		//printf("c: %zu \n",c.vertices.size());
 		
 		if(col::collision(entityCollider, c, responsVector)){
 			entityCubeModelMatrix = glm::translate(responsVector) * entityCubeModelMatrix; // should glm::translate(responsVector*deltaTime)?
 
-			for(glm::vec3& v: entityCollider.vertices){
+			for(glm::vec3& v: entityCollider){
 			glm::vec3 new_v = glm::vec3(glm::translate(responsVector) * glm::vec4(v, 1.0f));
 			v = glm::vec3(new_v.x,0.0f,new_v.z);
-		}
+			}
 
-			//printf(" collision :) \n");
 		}
 		
 	}
+}
+
+ 
+void projectile_collision_resolution(std::vector<Entity>& entitys){
+
+	// infuture we will only lett the player have a limited number of projectiles 
+	glm::vec3 responsVector = glm::vec3(0.0f);
+	for(Entity& e: entitys)
+		if(e.active == true) 
+			for(std::vector<glm::vec3>& c: ColliderList)
+				if(col::collision(e.collider, c, responsVector)){
+					projectile_exists= false;
+					e.active = false;
+					//printf("projectile collided");
+				}
+}
+
+void projectile_collision_resolution(){
+	// infuture we will only lett the player have a limited number of projectiles 
+	glm::vec3 responsVector = glm::vec3(0.0f);
+	for(Entity& e: ProjectileList)
+		if(e.active == true)
+			for(std::vector<glm::vec3>& c: ColliderList)
+				if(col::collision(e.collider, c, responsVector)){
+					projectile_exists= false;
+					e.active = false;
+					//printf("projectile collided");
+				}
 }
 
 int main(int argc, char* argv[])
@@ -589,10 +755,15 @@ int main(int argc, char* argv[])
 		// check events (keyboard among other)
 		stopRendering = handleEvents();
 
-		// collision check and resolution should be here
-		//printf("time to print first collider: %zu ",ColliderList[0].vertices.size()  );
-		//print_vec3(ColliderList[0].vertices);
+		for(Entity& p: ProjectileList){
+			if(p.active == true)
+				p.move_entity_circle(translate(30.0f*p.dir*deltaTime));
+		}
+
+		//projectile_collision_resolution(ProjectileList);
+		projectile_collision_resolution();
 		collision_resolution_test();
+
 
 		// Inform imgui of new frame
 		labhelper::newFrame( g_window );
